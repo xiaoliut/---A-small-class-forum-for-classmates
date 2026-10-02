@@ -21,17 +21,24 @@
     const emojiBtn = box.querySelector('[data-emoji]');
     const emojiPanel = box.querySelector('[data-emoji-panel]');
     const imagesInput = box.querySelector('[data-images]');
+    const maxImages = Number(box.getAttribute('data-max')) || 9;
+    const single = maxImages === 1;
 
     let images = [];
     try {
       const raw = imagesInput && imagesInput.value;
-      images = raw ? JSON.parse(raw) : [];
+      if (single) {
+        images = raw ? [raw] : [];
+      } else {
+        images = raw ? JSON.parse(raw) : [];
+      }
     } catch (_) {
       images = [];
     }
 
     function sync() {
-      if (imagesInput) imagesInput.value = JSON.stringify(images);
+      if (!imagesInput) return;
+      imagesInput.value = single ? (images[0] || '') : JSON.stringify(images);
     }
 
     function renderPreview() {
@@ -76,7 +83,7 @@
         .then(function (data) {
           if (data && data.ok) {
             for (const f of data.files) {
-              if (images.length >= 9) break;
+              if (images.length >= maxImages) break;
               images.push(f.url);
             }
             renderPreview();

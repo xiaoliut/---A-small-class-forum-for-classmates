@@ -142,6 +142,8 @@ async function main() {
 
   // 默认种子只留超级管理员，测试需要的「普通管理员/同学」账号在这里临时创建
   setupAccounts();
+  // 测试要验证 AI 审核逻辑，显式开启（测试结束 cleanup 会清掉，回到默认「关闭 AI」）
+  setupAiEnabled();
 
   // ---------------------------------------------------------------- 公开页面
   console.log('【公开页面】');
@@ -613,6 +615,16 @@ function setupAccounts() {
   };
   ensure('admin2', '管理员', '管理员', 'admin', 'admin123');
   ensure('xiaoming', '小明', '王小明', 'student', 'student123');
+}
+
+/** 测试期间开启 AI 审核（验证 AI 逻辑），结束由 cleanupSiteSettings 清除覆盖回到默认 */
+function setupAiEnabled() {
+  try {
+    const settings = require('../src/settings');
+    settings.saveSiteToDb({ features: { aiModeration: true, aiAutoApprove: true } });
+  } catch (_) {
+    /* ignore */
+  }
 }
 
 /** 清掉本次冒烟测试产生的数据，保持演示库干净 */

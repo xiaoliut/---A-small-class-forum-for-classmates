@@ -42,6 +42,7 @@ CREATE TABLE IF NOT EXISTS posts (
   title             TEXT    NOT NULL,
   content           TEXT    NOT NULL,
   images            TEXT,
+  cover             TEXT,
   status            TEXT    NOT NULL DEFAULT 'pending',
   pinned            INTEGER NOT NULL DEFAULT 0,
   is_notice         INTEGER NOT NULL DEFAULT 0,
@@ -174,6 +175,7 @@ function migrate() {
   addColumn('posts', 'warning_reason TEXT');
   addColumn('posts', 'warning_at TEXT');
   addColumn('posts', 'images TEXT');
+  addColumn('posts', 'cover TEXT');
   addColumn('comments', 'status TEXT NOT NULL DEFAULT \'visible\'');
   addColumn('comments', 'images TEXT');
 }

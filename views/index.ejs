@@ -74,12 +74,17 @@
         <ul class="post-list">
           <% posts.forEach(function (post) { %>
             <li class="post-item <%= post.pinned ? 'post-item--pinned' : '' %>">
+              <% if (post.cover) { %>
+                <div class="post-item__cover">
+                  <img src="<%= post.cover %>" alt="封面图" loading="lazy">
+                </div>
+              <% } %>
               <div class="post-item__body">
                 <div class="post-item__title">
                   <% if (post.pinned) { %><span class="badge badge--accent">置顶</span><% } %>
                   <% if (post.is_notice) { %><span class="badge badge--info">公告</span><% } %>
                   <span class="badge"><%= sectionMeta(post.section).icon %> <%= sectionMeta(post.section).name %></span>
-                  <a href="/posts/<%= post.id %>"><%= post.title %></a>
+                  <a class="post-item__link" href="/posts/<%= post.id %>"><%= post.title %></a>
                 </div>
                 <p class="post-item__excerpt"><%= post.content.replace(/\s+/g, ' ').slice(0, 120) %></p>
                 <div class="post-item__meta">

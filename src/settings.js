@@ -46,7 +46,7 @@ const DEFAULT_SITE = {
   },
 
   features: {
-    aiModeration: true,
+    aiModeration: false,
     aiAutoApprove: true,
     allowRegister: true
   }

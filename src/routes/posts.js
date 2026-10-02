@@ -3,6 +3,7 @@
 const express = require('express');
 const db = require('../db');
 const ai = require('../ai');
+const settings = require('../settings');
 const viewHelpers = require('../utils/view-helpers');
 const {
   requireApproved,
@@ -26,6 +27,12 @@ function parseImages(value) {
   } catch (_) {
     return null;
   }
+}
+
+/** 解析并校验封面图（单个 /uploads/ 开头的地址，图片或动图） */
+function parseCover(value) {
+  const s = String(value || '').trim();
+  return s.startsWith('/uploads/') ? s : null;
 }
 
 /** 当前生效的分区列表（来自 config/sections.jsonc） */
@@ -136,20 +143,32 @@ router.post('/', requireApproved, requireNotMuted, async (req, res) => {
     });
   }
 
-  const assessment = await ai.moderatePost(title, content);
-  // AI 判定正常且站点开启了自动通过时才直接公开，否则一律转人工复核
-  const autoApprove = ai.shouldAutoApprove();
-  const status = assessment.verdict === 'clean'
-    ? (autoApprove ? 'approved' : 'pending')
-    : assessment.verdict === 'violation' ? 'flagged' : 'pending';
+  let assessment;
+  let status;
+  if (settings.getSite().features.aiModeration === false) {
+    // AI 审核关闭 = 纯人工审核，所有帖子直接转待审队列
+    assessment = {
+      verdict: 'unchecked', risk: 0, labels: ['待人工审核'],
+      summary: 'AI 审核已关闭，帖子转人工审核。', source: 'disabled', advice: null
+    };
+    status = 'pending';
+  } else {
+    assessment = await ai.moderatePost(title, content);
+    // AI 判定正常且站点开启了自动通过时才直接公开，否则一律转人工复核
+    const autoApprove = ai.shouldAutoApprove();
+    status = assessment.verdict === 'clean'
+      ? (autoApprove ? 'approved' : 'pending')
+      : assessment.verdict === 'violation' ? 'flagged' : 'pending';
+  }
   const now = new Date().toISOString();
   const images = parseImages(req.body.images);
+  const cover = parseCover(req.body.cover);
 
   const info = db.run(
-    `INSERT INTO posts (user_id, section, title, content, images, status, ai_verdict, ai_risk, ai_labels,
+    `INSERT INTO posts (user_id, section, title, content, images, cover, status, ai_verdict, ai_risk, ai_labels,
                         ai_summary, ai_source, author_class, warning_reason, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    req.user.id, section, title, content, images, status,
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    req.user.id, section, title, content, images, cover, status,
     assessment.verdict, assessment.risk, JSON.stringify(assessment.labels),
     assessment.summary, assessment.source, req.user.class_name,
     assessment.advice, now, now
